@@ -2,7 +2,7 @@
 import argparse
 import json
 import sys
-from ossac.utils.configs_tools import get_defaults_yaml_args, update_args
+from icmrp.utils.configs_tools import get_defaults_yaml_args, update_args
 
 
 def main():
@@ -13,8 +13,8 @@ def main():
     parser.add_argument(
         "--algo",
         type=str,
-        default="ossac",
-        help="Algorithm name. Choose from: happo, hatrpo, haa2c, haddpg, hatd3, hasac, had3qn, maddpg, mappo.",
+        default="icmrp",
+        help="Algorithm name.",
     )
     parser.add_argument(
         "--env",
@@ -55,7 +55,7 @@ def main():
         algo_args, env_args = get_defaults_yaml_args(args["algo"], args["env"])
     update_args(unparsed_dict, algo_args, env_args)  # update args from command line
   # start training
-    from ossac.runners.runner import Runner
+    from icmrp.runners.runner import Runner
 
     runner = Runner(args, algo_args, env_args)
     runner.run()

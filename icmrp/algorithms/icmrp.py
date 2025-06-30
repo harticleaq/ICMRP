@@ -180,7 +180,7 @@ class Group_Embedding(nn.Module):
         self.group_embedding_dim = 64
         self.use_ln = False
 
-        if self.use_ln:     # 使用layer_norm
+        if self.use_ln:     # layer_norm
             self.group_embedding = nn.ModuleList([nn.Linear(self.agent_embedding_dim, self.group_embedding_dim),
                                                 nn.LayerNorm(self.group_embedding_dim)])
         else:
@@ -242,31 +242,31 @@ class Actor(nn.Module):
                           tau: float = 0.1
                           ):
         
-         # 1) 池化：把 256 个 token/时间步平均成一个 64‑维向量
+         # 1) pool
         pooled = agent_embeddings.mean(dim=1)            # [n_agent, 64]
-        pooled = F.normalize(pooled, dim=1)              # 归一化后可用点积作余弦
+        pooled = F.normalize(pooled, dim=1)              
 
-        # 2) 取 anchor 并可选地做线性变换
-        anchor = pooled[agent_id]                        # [64]
-        anchor = torch.matmul(anchor, self.W)            # [64]  <‑ 若不用 W 可删除此行
-        anchor = F.normalize(anchor, dim=0)              # 再归一化一次更稳
+        # 2)  anchor
+        anchor = pooled[agent_id]                       
+        anchor = torch.matmul(anchor, self.W)            #
+        anchor = F.normalize(anchor, dim=0)              
 
-        # 3) 正/负样本索引
+        # 3) positive/negative
         same_cluster = ind == ind[agent_id]
-        same_cluster[agent_id] = False                   # 去掉自身
+        same_cluster[agent_id] = False                 
         pos_idx = same_cluster.nonzero(as_tuple=False).squeeze(-1)
         neg_idx = (~same_cluster).nonzero(as_tuple=False).squeeze(-1)
 
-        # 若无正样本（孤簇）直接返回 0
+        
         if pos_idx.numel() == 0:
-            return anchor.new_zeros(())                  # 标量 0.
+            return anchor.new_zeros(())                 
 
-        # 4) 计算正、负相似度
+        # 4) similar
         sim_pos = torch.exp((pooled[pos_idx] @ anchor) / tau)   # [p]
         sim_neg = torch.exp((pooled[neg_idx] @ anchor) / tau)   # [q]
 
-        numer = sim_pos.sum()                                   # 标量
-        denom = numer + sim_neg.sum() + 1e-8                    # ε 防 0
+        numer = sim_pos.sum()                                 
+        denom = numer + sim_neg.sum() + 1e-8                    
         loss  = -torch.log(numer / denom)
 
         return loss
